@@ -1,6 +1,9 @@
-import userModel from "../models/user.model";
+import userModel from "../models/user.model.js";
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import config from "../config/config.js";
 
-async function registerUser(req, res) {
+export async function registerUser(req, res) {
     const { username, email, password } = req.body;
 
     const isAlreadyRegistered =  await userModel.findOne({
@@ -11,7 +14,7 @@ async function registerUser(req, res) {
     });
 
     if(isAlreadyRegistered) {
-        res.status(409).json({ 
+        return res.status(409).json({ 
             message: "Username or Email already exists."
         })
     }
@@ -27,5 +30,20 @@ async function registerUser(req, res) {
         password: hashedPassword
     })
 
+    const token = jwt.sign({
+        id: user._id,
+    }, config.JWT_SECRET, {
+        expiresIn: "1d"
+    })
 
+    res.status(201).json({
+        message: {
+            message: "User registered successfully",
+            user: {
+                username: user.username,
+                email: user.email
+            },
+            token
+        }
+    })
 }
