@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/samroz-burhan/authentication-system-backend#readme",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",

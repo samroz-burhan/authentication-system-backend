@@ -30,10 +30,23 @@ export async function registerUser(req, res) {
         password: hashedPassword
     })
 
-    const token = jwt.sign({
+    const accessToken = jwt.sign({
         id: user._id,
     }, config.JWT_SECRET, {
-        expiresIn: "1d"
+        expiresIn: "15m"
+    })
+
+    const refreshToken = jwt.sign({
+        id: user._id,
+    }, config.JWT_SECRET, {
+        expiresIn: "7d"
+    })
+
+    res.cookie("refreshToken", refreshToken, {
+        httyOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7*24*60*1000 //7 days
     })
 
     res.status(201).json({
@@ -43,7 +56,7 @@ export async function registerUser(req, res) {
                 username: user.username,
                 email: user.email
             },
-            token
+            accessToken
         }
     })
 }
@@ -66,4 +79,26 @@ export async function getMe(req, res) {
         }
     })
 
+}
+
+export async function refreshToken(req, res) {
+    const { refreshToken } = req.cookies;
+    
+    if(!refreshToken) {
+        return res.status(401).json({ message: "Token not found!" });
+    }
+
+    const decoded = jwt.verify(refreshToken, config.JWT_SECRET);
+
+    //New access token is generated
+    const accessToken = jwt.sign({
+        id: decoded.id
+    }, config.JWT_SECRET, {
+        expiresIn: "15m"
+    });
+
+    res.status(200).json({
+        message: "Access token refreshed successfully",
+        accessToken
+    })
 }
