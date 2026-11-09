@@ -9,6 +9,9 @@ authRouter.post("/register", authController.registerUser);
 //Fetch user details API => GET /api/auth/get-me
 authRouter.get("/get-me", authController.getMe);
 
+//login API => POST /api/auth/login
+authRouter.post("/login", authController.login);
+
 //Refresh Token API => POST /api/auth/refresh-token
 authRouter.post("/refresh-token", authController.refreshToken);
 
@@ -17,8 +20,6 @@ authRouter.get("/logout", authController.logout);
 
 //Logout from all devices (with session) API => GET /api/auth/logoutAll
 authRouter.get("/logoutAll", authController.logoutAll)
-
-
 
 
 export default authRouter
