@@ -15,4 +15,10 @@ authRouter.post("/refresh-token", authController.refreshToken);
 //Logout (with session) API => GET /api/auth/logout
 authRouter.get("/logout", authController.logout);
 
+//Logout from all devices (with session) API => GET /api/auth/logoutAll
+authRouter.get("/logoutAll", authController.logoutAll)
+
+
+
+
 export default authRouter
