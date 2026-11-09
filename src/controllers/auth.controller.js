@@ -253,3 +253,33 @@ export async function logoutAll(req, res) {
     })
 }
 
+export async function verifyEmail(req, res) {
+    const { otp, email } = req.body;
+
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+
+    const otpRecord = await otpModel.findOne({
+        email,
+        otpHash
+    })
+
+    if(!otpRecord) {
+        return res.status(400).json({
+            message: "Invalid OTP"
+        })
+    }
+
+    const user = await userModel.findByIdAndUpdate(otpRecord.user, {
+        verified: true
+    })
+
+    await otpModel.deleteMany({
+        user: otpRecord.user
+    })
+
+    return res.status(200).json({
+        message: "Email Verified successfully"
+    })
+
+}
+

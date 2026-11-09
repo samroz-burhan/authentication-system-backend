@@ -21,5 +21,9 @@ authRouter.get("/logout", authController.logout);
 //Logout from all devices (with session) API => GET /api/auth/logoutAll
 authRouter.get("/logoutAll", authController.logoutAll)
 
+//Verify Email API => POST /api/auth/verifyEmail
+authRouter.post("/verify-email", authController.verifyEmail);
+
+
 
 export default authRouter
