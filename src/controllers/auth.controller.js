@@ -38,7 +38,11 @@ export async function registerUser(req, res) {
     const html = getOTPHtml(otp);
 
     const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
-    await otpModel.create({ email, user: user._id, otpHash });
+    await otpModel.create({ 
+        email, 
+        user: user._id, 
+        otpHash 
+    });
 
     await sendEmail(email, "OTP Verification", `Your OTP code is ${otp}`, html)
 

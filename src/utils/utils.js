@@ -53,7 +53,5 @@ export function getOTPHtml(otp) {
 
 </body>
 </html>
-`
+`;
 }
-
-
