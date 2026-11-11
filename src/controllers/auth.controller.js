@@ -1,9 +1,10 @@
 import userModel from "../models/user.model.js";
 import sessionModel from "../models/session.model.js";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-import { sendEmail } from "../services/email.service.js";
+import sendEmail from "../services/email.service.js";
 import { generateOTP, getOTPHtml } from "../utils/utils.js";
 import otpModel from "../models/otp.model.js";
 
@@ -23,10 +24,15 @@ export async function registerUser(req, res) {
         })
     }
 
-    const hashedPassword = crypto
-        .createHash('sha256')
-        .update(password)
-        .digest("hex")
+    // const hashedPassword = crypto
+    //     .createHash('sha256')
+    //     .update(password)
+    //     .digest("hex")
+
+
+    //Using bcrypt with salt for secure hashing
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     const user = await userModel.create({
         username,
@@ -89,17 +95,21 @@ export async function login(req, res) {
         });
     }
 
+    console.log(`User with email ${email} exists`);
+
     if(!user.verified) {
         return res.status(401).json({
             message: "Email not verified"
         })
     }
 
-    const hashedPassword = crypto.createHash("sha256").update(password).digest("hex");
+    console.log(`User ${email} is verified!`);
 
-    const isPwValid = hashedPassword === user.password;
+
+    const isPwValid = await bcrypt.compare(password, user.password)
 
     if(!isPwValid) {
+    console.log(`User ${email} issue in pasword`);
         return res.status(401).json({ 
             message: "Invalid email or password"
         });

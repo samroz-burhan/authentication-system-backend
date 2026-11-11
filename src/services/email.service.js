@@ -1,6 +1,5 @@
 import nodemailer from "nodemailer";
-import config from "../config/config.js"
-import nodemailer from "nodemailer";
+import config from "../config/config.js";
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -17,7 +16,6 @@ const transporter = nodemailer.createTransport({
 transporter.verify((error, success) => {
     if(error) {
         console.error("Error connection to email server");
-    } else {
         console.log("Email server is ready to send message");
     }
 })

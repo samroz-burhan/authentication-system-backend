@@ -9,7 +9,6 @@ This document explains the authentication flow in a Node.js, Express, and MongoD
 The diagrams distinguish between what the current controller does and the checks that should be added for a safer implementation.
 
 ---
-
 ## 1. Big picture
 
 A user can have multiple sessions. For example, logging in on a laptop and a phone creates two separate sessions for the same user.
