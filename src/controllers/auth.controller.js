@@ -95,7 +95,7 @@ export async function login(req, res) {
         });
     }
 
-    console.log(`User with email ${email} exists`);
+    // console.log(`User with email ${email} exists`);
 
     if(!user.verified) {
         return res.status(401).json({
@@ -103,13 +103,13 @@ export async function login(req, res) {
         })
     }
 
-    console.log(`User ${email} is verified!`);
+    // console.log(`User ${email} is verified!`);
 
 
     const isPwValid = await bcrypt.compare(password, user.password)
 
     if(!isPwValid) {
-    console.log(`User ${email} issue in pasword`);
+        // console.log(`User ${email} issue in pasword`);
         return res.status(401).json({ 
             message: "Invalid email or password"
         });
