@@ -1,19 +1,4 @@
 # JWT Authentication — Sequence Diagram & Walkthrough
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 This document explains the authentication flow in a Node.js, Express, and MongoDB application using:
 
 - **User** — the account stored in MongoDB.

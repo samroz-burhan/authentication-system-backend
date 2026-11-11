@@ -68,7 +68,7 @@ export async function getMe(req, res) {
     const decoded = jwt.verify(token, config.JWT_SECRET); 
     const user = await userModel.findById(decoded.id);
 
-    res.status(200).json({
+    res.status(200).json({      
         message: "User fetched successfully",
         user: {
             username: user.username,
