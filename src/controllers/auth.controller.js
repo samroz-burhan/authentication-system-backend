@@ -3,9 +3,8 @@ import sessionModel from "../models/session.model.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-import sendEmail from "../services/email.service.js";
-import { generateOTP, getOTPHtml } from "../utils/utils.js";
 import otpModel from "../models/otp.model.js";
+import { registerUserService } from "../services/auth.service.js";
 
 export async function registerUser(req, res) {
     const { username, email, password } = req.body;
@@ -23,40 +22,15 @@ export async function registerUser(req, res) {
         })
     }
 
-    // const hashedPassword = crypto
-    //     .createHash('sha256')
-    //     .update(password)
-    //     .digest("hex")
-
-
-    const user = await userModel.create({
-        username,
-        email,
-        password
-    })
-
-    const otp = generateOTP();
-    const html = getOTPHtml(otp);
-
-    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
-    await otpModel.create({ 
-        email, 
-        user: user._id, 
-        otpHash 
-    });
-
-    await sendEmail(email, "OTP Verification", `Your OTP code is ${otp}`, html)
-
+    //Calling my registerUserService
+    const user = registerUserService({ username, email, password })
+    
     res.status(201).json({
         message: {
             message: "User registered successfully",
-            user: {
-                username: user.username,
-                email: user.email,
-                verified: user.verified
-            }
+            user: user.toPublicJSON
         }
-    })
+    });
 }
 
 export async function getMe(req, res) {
