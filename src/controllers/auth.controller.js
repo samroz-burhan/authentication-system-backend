@@ -1,7 +1,6 @@
 import userModel from "../models/user.model.js";
 import sessionModel from "../models/session.model.js";
 import crypto from "crypto";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import sendEmail from "../services/email.service.js";
@@ -30,14 +29,10 @@ export async function registerUser(req, res) {
     //     .digest("hex")
 
 
-    //Using bcrypt with salt for secure hashing
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     const user = await userModel.create({
         username,
         email,
-        password: hashedPassword
+        password
     })
 
     const otp = generateOTP();
@@ -87,7 +82,9 @@ export async function getMe(req, res) {
 export async function login(req, res) {
     const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email })
+    const user = await userModel
+        .findOne({ email })
+        .select("+password")
 
     if(!user) {
         return res.status(401).json({ 
@@ -106,7 +103,7 @@ export async function login(req, res) {
     // console.log(`User ${email} is verified!`);
 
 
-    const isPwValid = await bcrypt.compare(password, user.password)
+    const isPwValid = await user.comparePassword(password);
 
     if(!isPwValid) {
         // console.log(`User ${email} issue in pasword`);
