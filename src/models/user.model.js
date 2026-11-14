@@ -35,7 +35,7 @@ userSchema.pre("save", async function () {
 })
 
 //This instance method `comparePassword` belong to an individual user document
-userSchema.methods.comparePassword = function (plainPassword) {
+userSchema.methods.comparePassword =  function (plainPassword) {
     return bcrypt.compare(plainPassword, this.password);
 }
 

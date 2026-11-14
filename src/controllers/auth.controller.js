@@ -6,31 +6,23 @@ import config from "../config/config.js";
 import otpModel from "../models/otp.model.js";
 import { registerUserService } from "../services/auth.service.js";
 
-export async function registerUser(req, res) {
-    const { username, email, password } = req.body;
-
-    const isAlreadyRegistered =  await userModel.findOne({
-        $or: [
-            { username },
-            { email }
-        ]
-    });
-
-    if(isAlreadyRegistered) {
-        return res.status(409).json({ 
-            message: "Username or Email already exists."
-        })
-    }
-
-    //Calling my registerUserService
-    const user = registerUserService({ username, email, password })
+export async function registerUser(req, res, next) {
     
-    res.status(201).json({
+    try {
+        const { username, email, password } = req.body;
+        const user = await registerUserService({ username, email, password })   
+
+        return res.status(201).json({
         message: {
             message: "User registered successfully",
-            user: user.toPublicJSON
+            user: user.toPublicJSON()
         }
     });
+
+    } catch (error) {
+        next(error)
+    }
+     
 }
 
 export async function getMe(req, res) {
