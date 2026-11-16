@@ -4,8 +4,9 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import otpModel from "../models/otp.model.js";
-import { registerUserService } from "../services/auth.service.js";
+import { loginUserService, registerUserService } from "../services/auth.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
+
 
 export const registerUser = asyncHandler(async (req, res) => {
 
@@ -13,25 +14,17 @@ export const registerUser = asyncHandler(async (req, res) => {
   const user = await registerUserService({ username, email, password });
 
   return res.status(201).json({
-    message: {
-        success: true,
-        message: "User registered successfully",
-        user: user.toPublicJSON(),
-    }
-
+    success: true,
+    message: "User registered successfully",
+    user: user.toPublicJSON()
   });
+
 });
 
-export async function getMe(req, res) {
-  const token = req.headers.authorization?.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ message: "Token Not Found" });
-  }
-
-  const decoded = jwt.verify(token, config.JWT_SECRET);
-  const user = await userModel.findById(decoded.id);
-
+export const getMe = asyncHandler(async (req, res) => {
+  
+  const user = await userModel.findById(req.user.id);
+  
   res.status(200).json({
     message: "User fetched successfully",
     user: {
@@ -39,70 +32,12 @@ export async function getMe(req, res) {
       email: user.email,
     },
   });
-}
+})
 
-export async function login(req, res) {
+export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await userModel.findOne({ email }).select("+password");
-
-  if (!user) {
-    return res.status(401).json({
-      message: "Invalid Credientials",
-    });
-  }
-
-  // console.log(`User with email ${email} exists`);
-
-  if (!user.verified) {
-    return res.status(401).json({
-      message: "Email not verified",
-    });
-  }
-
-  // console.log(`User ${email} is verified!`);
-
-  const isPwValid = await user.comparePassword(password);
-
-  if (!isPwValid) {
-    // console.log(`User ${email} issue in pasword`);
-    return res.status(401).json({
-      message: "Invalid email or password",
-    });
-  }
-
-  const refreshToken = jwt.sign(
-    {
-      id: user._id,
-    },
-    config.JWT_SECRET,
-    {
-      expiresIn: "7d",
-    },
-  );
-
-  const refreshTokenHash = crypto
-    .createHash("sha256")
-    .update(refreshToken)
-    .digest("hex");
-
-  const session = await sessionModel.create({
-    user: user._id,
-    refreshTokenHash,
-    ip: req.ip,
-    userAgent: req.headers["user-agent"],
-  });
-
-  const accessToken = jwt.sign(
-    {
-      id: user._id,
-      sessionId: session._id,
-    },
-    config.JWT_SECRET,
-    {
-      expiresIn: "15m",
-    },
-  );
+  const { user, refreshToken, accessToken } = await loginUserService({ email, password, req });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
@@ -119,82 +54,89 @@ export async function login(req, res) {
     },
     accessToken,
   });
-}
+})
 
-export async function refreshToken(req, res) {
+export const refreshToken = asyncHandler(async (req, res) => {
   const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return res.status(401).json({ message: "Token not found!" });
+    throw new ApiError(401, "Refresh token not found");
   }
 
-  const decoded = jwt.verify(refreshToken, config.JWT_SECRET);
+  // Verify refresh JWT
+  const decoded = jwt.verify(
+    refreshToken,
+    config.JWT_SECRET
+  );
 
+  // Hash incoming refresh token
   const refreshTokenHash = crypto
     .createHash("sha256")
     .update(refreshToken)
     .digest("hex");
 
+  // Find valid session
   const session = await sessionModel.findOne({
     refreshTokenHash,
+    user: decoded.id,
     revoked: false,
   });
 
   if (!session) {
-    return res.status(401).json({
-      message: "Invalid refresh token",
-    });
+    throw new ApiError(401, "Invalid refresh token");
   }
 
-  //New access token is generated
+  // Generate new access token
   const accessToken = jwt.sign(
     {
       id: decoded.id,
+      sessionId: session._id,
     },
     config.JWT_SECRET,
-    {
-      expiresIn: "15m",
-    },
+    { expiresIn: "15m" }
   );
 
-  //New refresh token is generated
+  // Generate new refresh token
   const newRefreshToken = jwt.sign(
     {
       id: decoded.id,
     },
     config.JWT_SECRET,
-    {
-      expiresIn: "7d",
-    },
+    { expiresIn: "7d" }
   );
 
+  // Hash new refresh token
   const newRefreshTokenHash = crypto
     .createHash("sha256")
     .update(newRefreshToken)
     .digest("hex");
+
+  // Rotate refresh token
   session.refreshTokenHash = newRefreshTokenHash;
+
   await session.save();
 
+  // Update cookie
   res.cookie("refreshToken", newRefreshToken, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
+    path: "/api/auth",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  res.status(200).json({
+  return res.status(200).json({
+    success: true,
     message: "Access token refreshed successfully",
     accessToken,
   });
-}
+});
 
-export async function logout(req, res) {
+export const logout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return res.status(400).json({
-      message: "Refresh token not found",
-    });
+    throw new ApiError(400, "Refresh token not found");
   }
 
   const refreshTokenHash = crypto
@@ -208,52 +150,32 @@ export async function logout(req, res) {
   });
 
   if (!session) {
-    return res.status(400).json({
-      message: "Session Not Found",
-    });
+    throw new ApiError(400, "Session not found");
   }
 
   session.revoked = true;
   await session.save();
 
-  res.clearCookie("refreshToken");
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/api/auth",
+  });
 
-  res.status(200).json({
+  return res.status(200).json({
+    success: true,
     message: "Logged out successfully",
   });
-}
+});
 
-export async function logoutAll(req, res) {
-  const { refreshToken } = req.cookies;
-
-  if (!refreshToken) {
-    return res.status(400).json({
-      message: "Refresh Token not found!",
-    });
-  }
-
-  const decoded = jwt.verify(refreshToken, config.JWT_SECRET);
-
-  await sessionModel.updateMany(
-    {
-      user: decoded.id,
-      revoked: false,
-    },
-    {
-      revoked: true,
-    },
-  );
-
-  res.clearCookie("refreshToken");
-  res.status(200).json({
-    message: "Logged out from all devices successfully!",
-  });
-}
-
-export async function verifyEmail(req, res) {
+export const verifyEmail = asyncHandler(async (req, res) => {
   const { otp, email } = req.body;
 
-  const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+  const otpHash = crypto
+    .createHash("sha256")
+    .update(otp)
+    .digest("hex");
 
   const otpRecord = await otpModel.findOne({
     email,
@@ -261,20 +183,64 @@ export async function verifyEmail(req, res) {
   });
 
   if (!otpRecord) {
-    return res.status(400).json({
-      message: "Invalid OTP",
-    });
+    throw new ApiError(400, "Invalid OTP");
   }
 
-  const user = await userModel.findByIdAndUpdate(otpRecord.user, {
-    verified: true,
-  });
+  const user = await userModel.findByIdAndUpdate(
+    otpRecord.user,
+    { verified: true },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
   await otpModel.deleteMany({
     user: otpRecord.user,
   });
 
   return res.status(200).json({
-    message: "Email Verified successfully",
+    success: true,
+    message: "Email verified successfully",
   });
-}
+});
+
+export const logoutAll = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.cookies;
+
+  if (!refreshToken) {
+    throw new ApiError(400, "Refresh token not found");
+  }
+
+  const decoded = jwt.verify(
+    refreshToken,
+    config.JWT_SECRET
+  );
+
+  await sessionModel.updateMany(
+    {
+      user: decoded.id,
+      revoked: false,
+    },
+    {
+      $set: {
+        revoked: true,
+      },
+    }
+  );
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/api/auth",
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Logged out from all devices successfully",
+  });
+});
+
+

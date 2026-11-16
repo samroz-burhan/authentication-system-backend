@@ -1,5 +1,10 @@
 import { Router } from "express";
 import * as authController from "../controllers/auth.controller.js";
+import { authenticate } from "../middlewares/auth.middleware.js";
+
+console.log("logout:", typeof authController.logout);
+console.log("logoutAll:", typeof authController.logoutAll);
+console.log("verifyEmail:", typeof authController.verifyEmail);
 
 const authRouter = Router();
 
@@ -7,7 +12,7 @@ const authRouter = Router();
 authRouter.post("/register", authController.registerUser);
 
 //2. Fetch user details API => GET /api/auth/get-me
-authRouter.get("/get-me", authController.getMe);
+authRouter.get("/get-me", authenticate, authController.getMe);
 
 //3. login API => POST /api/auth/login
 authRouter.post("/login", authController.login);

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const sessionSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "users",
+        ref: "Users",
         required: [true, "User is required"]
     },
     refreshTokenHash: {
