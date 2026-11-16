@@ -1,34 +1,53 @@
-export default function errorMiddleware (err, req, res, next) {
-    let statusCode = err.statusCode || 500;
-    let errorMessage = err.message || "Internal Server Error";
+import ApiError from "../utils/apiError.js";
 
-    //Handle unexpected errors
-    if(!err.isOperational) {
-        statusCode = 500
-        errorMessage = "Internal Server Error"
+export default function errorMiddleware(err, req, res, next) {
+
+    // 1. Default values
+    let statusCode = 500;
+    let message = "Internal Server Error";
+
+    // 2. Our custom application errors
+    if (err instanceof ApiError) {
+        statusCode = err.statusCode;
+        message = err.message;
     }
 
-    //MongoDB duplication error
-    if(err.code === 11000) {
+    // 3. MongoDB duplicate key error
+    else if (err.code === 11000) {
         statusCode = 409;
-        errorMessage = "Username or Email already exists";
+        message = "Resource already exists";
     }
 
-    //Mongoose Validation Error
-    if(err.name === "ValidationError") {
+    // 4. Mongoose validation error
+    else if (err.name === "ValidationError") {
         statusCode = 400;
-        errorMessage = err.message
+        message = err.message;
     }
 
-    // Mongoose invalid ObjectId
-    if(err.name === "CastError") {
+    // 5. Invalid MongoDB ObjectId
+    else if (err.name === "CastError") {
         statusCode = 400;
-        errorMessage = "Invalid resource ID"
+        message = "Invalid resource ID";
     }
-    
-    
+
+    // 6. JWT errors
+    else if (
+        err.name === "JsonWebTokenError" ||
+        err.name === "TokenExpiredError" ||
+        err.name === "NotBeforeError"
+    ) {
+        statusCode = 401;
+        message = "Invalid or expired token";
+    }
+
+    // 7. Unexpected errors
+    else {
+        console.error("UNEXPECTED ERROR:", err);
+    }
+
+    // 9. Standardized response
     return res.status(statusCode).json({
-        message: errorMessage
-    });
-
+        success: false,
+        message
+    })
 }
