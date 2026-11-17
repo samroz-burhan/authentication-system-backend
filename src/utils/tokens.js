@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import ApiError from "./apiError.js";
@@ -14,6 +15,7 @@ function signToken(payload, subject, expiresIn) {
     audience: TOKEN_AUDIENCE,
     expiresIn,
     issuer: TOKEN_ISSUER,
+    jwtid: crypto.randomUUID(),
     subject,
   });
 }

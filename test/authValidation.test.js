@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import ApiError from "../src/utils/apiError.js";
 import {
   normalizeEmail,
@@ -9,92 +8,85 @@ import {
 } from "../src/utils/authValidation.js";
 
 test("normalizes email casing and surrounding spaces", () => {
-  assert.equal(normalizeEmail("  User@Example.com "), "user@example.com");
+  expect(normalizeEmail("  User@Example.com ")).toBe("user@example.com");
 });
 
 test("rejects malformed or non-string email addresses", () => {
-  assert.throws(() => normalizeEmail("not-an-email"), ApiError);
-  assert.throws(() => normalizeEmail(undefined), ApiError);
+  expect(() => normalizeEmail("not-an-email")).toThrow(ApiError);
+  expect(() => normalizeEmail(undefined)).toThrow(ApiError);
 });
 
 test("rejects missing request objects with a client error", () => {
-  assert.throws(() => validateRegistrationInput(null), ApiError);
-  assert.throws(() => validateLoginInput(null), ApiError);
-  assert.throws(() => validateVerificationInput(null), ApiError);
+  expect(() => validateRegistrationInput(null)).toThrow(ApiError);
+  expect(() => validateLoginInput(null)).toThrow(ApiError);
+  expect(() => validateVerificationInput(null)).toThrow(ApiError);
 });
 
 test("registration validation trims username and enforces password bounds", () => {
-  assert.deepEqual(
+  expect(
     validateRegistrationInput({
       username: " sample-user ",
       email: "USER@example.com",
       password: "a-secure-passphrase",
     }),
-    {
+  ).toEqual({
       username: "sample-user",
       email: "user@example.com",
       password: "a-secure-passphrase",
-    }
-  );
+  });
 
-  assert.throws(
+  expect(
     () =>
       validateRegistrationInput({
         username: "ok",
         email: "user@example.com",
         password: "short",
       }),
-    ApiError
-  );
-  assert.throws(
+  ).toThrow(ApiError);
+  expect(
     () =>
       validateRegistrationInput({
         username: "sample-user",
         email: "user@example.com",
         password: "x".repeat(73),
       }),
-    ApiError
-  );
+  ).toThrow(ApiError);
 });
 
 test("login rejects oversized passwords and normalizes email", () => {
-  assert.deepEqual(
+  expect(
     validateLoginInput({
       email: "USER@example.com",
       password: "a-secure-passphrase",
     }),
-    {
+  ).toEqual({
       email: "user@example.com",
       password: "a-secure-passphrase",
-    }
-  );
-  assert.throws(
+  });
+  expect(
     () =>
       validateLoginInput({
         email: "user@example.com",
         password: "x".repeat(73),
       }),
-    ApiError
-  );
+  ).toThrow(ApiError);
 });
 
 test("verification accepts only a six-digit code", () => {
-  assert.deepEqual(
+  expect(
     validateVerificationInput({
       email: "USER@example.com",
       otp: "123456",
     }),
-    {
+  ).toEqual({
       email: "user@example.com",
       otp: "123456",
-    }
-  );
-  assert.throws(
+  });
+  expect(
     () =>
       validateVerificationInput({
         email: "user@example.com",
         otp: "12a456",
       }),
-    ApiError
-  );
+  ).toThrow(ApiError);
 });

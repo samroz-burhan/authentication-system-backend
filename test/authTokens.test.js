@@ -1,41 +1,36 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
-process.env.MONGO_URI ??= "mongodb://127.0.0.1/auth-test";
-process.env.JWT_SECRET ??= "unit-test-secret-that-is-at-least-32-bytes-long";
-process.env.GOOGLE_CLIENT_ID ??= "test-client-id";
-process.env.GOOGLE_CLIENT_SECRET ??= "test-client-secret";
-process.env.GOOGLE_REFRESH_TOKEN ??= "test-refresh-token";
-process.env.GOOGLE_USER ??= "test@example.com";
-
-const {
+import {
   createAccessToken,
   createRefreshToken,
   verifyAccessToken,
   verifyRefreshToken,
-} = await import("../src/utils/tokens.js");
-const { generateOTP, hashOTP } = await import("../src/utils/utils.js");
+} from "../src/utils/tokens.js";
+import { generateOTP, hashOTP } from "../src/utils/utils.js";
 
 test("access and refresh tokens carry different purposes", () => {
   const accessToken = createAccessToken("user-id", "session-id");
   const refreshToken = createRefreshToken("user-id", "session-id");
 
-  assert.deepEqual(verifyAccessToken(accessToken), {
+  expect(verifyAccessToken(accessToken)).toEqual({
     userId: "user-id",
     sessionId: "session-id",
   });
-  assert.deepEqual(verifyRefreshToken(refreshToken), {
+  expect(verifyRefreshToken(refreshToken)).toEqual({
     userId: "user-id",
     sessionId: "session-id",
   });
-  assert.throws(() => verifyRefreshToken(accessToken));
-  assert.throws(() => verifyAccessToken(refreshToken));
+  expect(() => verifyRefreshToken(accessToken)).toThrow();
+  expect(() => verifyAccessToken(refreshToken)).toThrow();
+  expect(createRefreshToken("user-id", "session-id")).not.toBe(
+    createRefreshToken("user-id", "session-id")
+  );
 });
 
 test("verification codes are six digits and stored as a one-way keyed digest", () => {
   const otp = generateOTP();
 
-  assert.match(otp, /^\d{6}$/);
-  assert.equal(hashOTP(otp), hashOTP(otp));
-  assert.notEqual(hashOTP(otp), otp);
+  expect(otp).toMatch(/^\d{6}$/);
+  expect(hashOTP(otp)).toBe(hashOTP(otp));
+  expect(hashOTP(otp)).not.toBe(otp);
 });

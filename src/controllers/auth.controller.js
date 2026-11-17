@@ -112,7 +112,7 @@ export const refreshToken = asyncHandler(async (req, res) => {
         expiresAt: new Date(now.getTime() + REFRESH_TOKEN_TTL_SECONDS * 1000),
       },
     },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   if (!session) {
@@ -191,7 +191,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
       attempts: { $lt: 5 },
     },
     { $inc: { attempts: 1 } },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   if (!attempt) {
@@ -223,7 +223,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   const user = await userModel.findByIdAndUpdate(
     consumedOTP.user,
     { verified: true },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   if (!user) {
