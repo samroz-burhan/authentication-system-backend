@@ -1,9 +1,11 @@
 import userModel from "../models/user.model.js";
 import otpModel from "../models/otp.model.js";
+import sessionModel from "../models/session.model.js";
 import sendEmail from "./email.service.js";
 import { generateOTP, getOTPHtml } from "../utils/utils.js";
 import crypto from "crypto";
 import ApiError from "../utils/apiError.js";
+import jwt from "jsonwebtoken";
 import comparePassword from "../models/user.model.js";
 import config from "../config/config.js";
 

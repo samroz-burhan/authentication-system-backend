@@ -12,13 +12,14 @@ const transporter = nodemailer.createTransport({
     }
 })
 
-//verify the transporter
+// Callback approach
 transporter.verify((error, success) => {
-    if(error) {
-        console.error("Error connection to email server");
-        console.log("Email server is ready to send message");
-    }
-})
+  if (error) {
+    console.error('Verification failed:', error);
+  } else {
+    console.log('Server is ready to take our messages');
+  }
+});
 
 // Function to send email
 const sendEmail = async (to, subject, text, html) => {

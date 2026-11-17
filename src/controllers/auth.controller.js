@@ -6,6 +6,7 @@ import config from "../config/config.js";
 import otpModel from "../models/otp.model.js";
 import { loginUserService, registerUserService } from "../services/auth.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
 
 
 export const registerUser = asyncHandler(async (req, res) => {

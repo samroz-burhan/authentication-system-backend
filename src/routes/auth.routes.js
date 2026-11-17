@@ -2,10 +2,6 @@ import { Router } from "express";
 import * as authController from "../controllers/auth.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 
-console.log("logout:", typeof authController.logout);
-console.log("logoutAll:", typeof authController.logoutAll);
-console.log("verifyEmail:", typeof authController.verifyEmail);
-
 const authRouter = Router();
 
 //1. Register API => POST /api/auth/register
