@@ -142,7 +142,7 @@ Each login creates a **session** for that browser or device. The access token is
 How a request moves through the codebase:
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'background': '#000000', 'primaryColor': '#111111', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#ff8c00', 'lineColor': '#ff8c00', 'secondaryColor': '#181818', 'tertiaryColor': '#222222', 'textColor': '#f5f5f5', 'mainBkg': '#111111', 'nodeBorder': '#ff8c00', 'clusterBkg': '#080808', 'clusterBorder': '#666666', 'titleColor': '#ffffff', 'edgeLabelBackground': '#111111', 'actorBkg': '#111111', 'actorBorder': '#ff8c00', 'actorTextColor': '#ffffff', 'actorLineColor': '#ff8c00', 'signalColor': '#f5f5f5', 'signalTextColor': '#ffffff', 'labelBoxBkgColor': '#111111', 'labelBoxBorderColor': '#ff8c00', 'labelTextColor': '#ffffff', 'loopTextColor': '#ffffff', 'noteBkgColor': '#111111', 'noteBorderColor': '#ff8c00', 'noteTextColor': '#ffffff', 'activationBkgColor': '#222222', 'activationBorderColor': '#ff8c00', 'sequenceNumberColor': '#000000', 'stateBkg': '#111111', 'stateBorder': '#ff8c00', 'stateLabelColor': '#ffffff', 'transitionColor': '#ff8c00', 'fontFamily': 'Segoe UI, Helvetica, Arial'}}}%%
+%%{init: {"theme": "dark"}}%%
 flowchart TD
     Browser(["🌐 Browser or Frontend"])
 
@@ -541,7 +541,7 @@ sequenceDiagram
 ### 🧾 Session
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'background': '#000000', 'primaryColor': '#111111', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#ff8c00', 'lineColor': '#ff8c00', 'secondaryColor': '#181818', 'tertiaryColor': '#222222', 'textColor': '#f5f5f5', 'mainBkg': '#111111', 'nodeBorder': '#ff8c00', 'clusterBkg': '#080808', 'clusterBorder': '#666666', 'titleColor': '#ffffff', 'edgeLabelBackground': '#111111', 'stateBkg': '#111111', 'stateBorder': '#ff8c00', 'stateLabelColor': '#ffffff', 'transitionColor': '#ff8c00'}}}%%
+%%{init: {"theme": "dark"}}%%
 stateDiagram-v2
     [*] --> Active: Login succeeds
     Active --> Active: Refresh rotates token
@@ -555,7 +555,7 @@ stateDiagram-v2
 ### 🔢 Email verification code
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'background': '#000000', 'primaryColor': '#111111', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#ff8c00', 'lineColor': '#ff8c00', 'secondaryColor': '#181818', 'tertiaryColor': '#222222', 'textColor': '#f5f5f5', 'mainBkg': '#111111', 'nodeBorder': '#ff8c00', 'clusterBkg': '#080808', 'clusterBorder': '#666666', 'titleColor': '#ffffff', 'edgeLabelBackground': '#111111', 'stateBkg': '#111111', 'stateBorder': '#ff8c00', 'stateLabelColor': '#ffffff', 'transitionColor': '#ff8c00'}}}%%
+%%{init: {"theme": "dark"}}%%
 stateDiagram-v2
     [*] --> Issued: Register or resend
     Issued --> Issued: Resend replaces code
@@ -572,7 +572,7 @@ stateDiagram-v2
 ## 🗄️ Data Model
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'background': '#000000', 'primaryColor': '#111111', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#ff8c00', 'lineColor': '#ff8c00', 'secondaryColor': '#181818', 'tertiaryColor': '#222222', 'textColor': '#f5f5f5', 'mainBkg': '#111111', 'nodeBorder': '#ff8c00', 'clusterBkg': '#080808', 'clusterBorder': '#666666', 'titleColor': '#ffffff', 'edgeLabelBackground': '#111111', 'entityBkgColor': '#111111', 'entityBorderColor': '#ff8c00', 'entityTextColor': '#ffffff', 'attributeBackgroundColor': '#111111', 'attributeFontColor': '#f5f5f5', 'relationshipLabelBackground': '#111111', 'relationshipLabelColor': '#ffffff'}}}%%
+%%{init: {"theme": "dark"}}%%
 erDiagram
     USERS ||--o{ SESSIONS : "has many"
     USERS ||--o| OTPS : "has one current"
