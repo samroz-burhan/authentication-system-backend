@@ -1,35 +1,32 @@
-import jwt from "jsonwebtoken";
-import config from "../config/config.js";
 import ApiError from "../utils/apiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import sessionModel from "../models/session.model.js";
+import { verifyAccessToken } from "../utils/tokens.js";
 
-export const authenticate = asyncHandler( async (req, res, next) => {
+export const authenticate = asyncHandler(async (req, res, next) => {
+  const authorization = req.get("authorization");
+  const match = authorization?.match(/^Bearer\s+(\S+)$/i);
 
-    const authorization = req.headers.authorization || req.headers.Authorizarion;
+  if (!match) {
+    throw new ApiError(401, "A bearer access token is required");
+  }
 
-    if(!authorization?.startsWith('Bearer')){
-        throw new ApiError(401, "Access token required");
-    }
-    
-    const token = authorization.split(" ")[0];
-    const decoded = jwt.verify(token, config.JWT_SECRET);
+  const { userId, sessionId } = verifyAccessToken(match[1]);
+  const session = await sessionModel.findOne({
+    _id: sessionId,
+    user: userId,
+    revoked: false,
+    expiresAt: { $gt: new Date() },
+  });
 
-    const session = await sessionModel.findOne({
-        _id: decoded.sessionId,
-        user: decoded.id,
-        revoked: false
-    });
+  if (!session) {
+    throw new ApiError(401, "Session is invalid, expired, or revoked");
+  }
 
-    if(!session) {
-        throw new ApiError(401, "Session is invalid or revoked");
-    }
+  req.auth = {
+    userId,
+    sessionId,
+  };
 
-    req.user = {
-        id: session.id,
-        sessionId: decoded.sessionId
-    }
-
-    next();
-
-})
+  next();
+});

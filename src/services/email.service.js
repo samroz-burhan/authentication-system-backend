@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import config from "../config/config.js";
+import ApiError from "../utils/apiError.js";
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -25,18 +26,17 @@ transporter.verify((error, success) => {
 const sendEmail = async (to, subject, text, html) => {
   try {
     const info = await transporter.sendMail({
-      from: `"Your Name" <${config.GOOGLE_USER}>`, // sender address
-      to, // list of receivers
-      subject, // Subject line
-      text, // plain text body
-      html, // html body
+      from: `"Authentication Service" <${config.GOOGLE_USER}>`,
+      to,
+      subject,
+      text,
+      html,
     });
 
     console.log('Message sent: %s', info.messageId);
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
-
   } catch (error) {
     console.error('Error sending email:', error);
+    throw new ApiError(502, "Verification email could not be sent. Please try again later");
   }
 };
 

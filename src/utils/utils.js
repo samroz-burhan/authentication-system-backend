@@ -1,5 +1,15 @@
+import crypto from "crypto";
+import config from "../config/config.js";
+
 export function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+export function hashOTP(otp) {
+  return crypto
+    .createHmac("sha256", config.JWT_SECRET)
+    .update(otp)
+    .digest("hex");
 }
 
 export function getOTPHtml(otp) {

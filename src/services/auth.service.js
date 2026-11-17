@@ -1,110 +1,121 @@
+import crypto from "crypto";
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 import userModel from "../models/user.model.js";
 import otpModel from "../models/otp.model.js";
 import sessionModel from "../models/session.model.js";
 import sendEmail from "./email.service.js";
-import { generateOTP, getOTPHtml } from "../utils/utils.js";
-import crypto from "crypto";
+import { generateOTP, getOTPHtml, hashOTP } from "../utils/utils.js";
 import ApiError from "../utils/apiError.js";
-import jwt from "jsonwebtoken";
-import comparePassword from "../models/user.model.js";
-import config from "../config/config.js";
+import {
+  createAccessToken,
+  createRefreshToken,
+  REFRESH_TOKEN_TTL_SECONDS,
+} from "../utils/tokens.js";
+import {
+  normalizeEmail,
+  validateLoginInput,
+  validateRegistrationInput,
+} from "../utils/authValidation.js";
 
+const dummyPasswordHashPromise = bcrypt.hash(
+  crypto.randomBytes(32).toString("hex"),
+  12
+);
 
-export async function registerUserService({ username, email, password }) {
-    
-  //1. Check if user already exists
+async function sendVerificationCode(user) {
+  const otp = generateOTP();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+  await otpModel.findOneAndUpdate(
+    { user: user._id },
+    {
+      $set: {
+        email: user.email,
+        otpHash: hashOTP(otp),
+        attempts: 0,
+        expiresAt,
+      },
+    },
+    {
+      upsert: true,
+      new: true,
+      runValidators: true,
+      setDefaultsOnInsert: true,
+    }
+  );
+
+  await sendEmail(
+    user.email,
+    "Verify your email",
+    `Your verification code is: ${otp}. It expires in 5 minutes.`,
+    getOTPHtml(otp)
+  );
+}
+
+export async function registerUserService(input) {
+  const { username, email, password } = validateRegistrationInput(input);
+
   const existingUser = await userModel.findOne({
     $or: [{ username }, { email }],
   });
 
   if (existingUser) {
-    throw new ApiError(409, "Username or Email already exists");
+    throw new ApiError(409, "Username or email already exists");
   }
 
-  //2. Create user
   const user = await userModel.create({
     username,
     email,
     password,
   });
 
-  //3. Generate OTP
-  const otp = generateOTP();
-
-  //4. Prepare email HTML
-  const html = getOTPHtml(otp);
-
-  //5. Hash OTP
-  const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
-
-  //6. Save OTP
-  await otpModel.create({
-    email,
-    user: user._id,
-    otpHash,
-  });
-
-  //7. Send email
-  await sendEmail(email, "OTP VERIFICATION", `Your OTP is: ${otp}`, html);
-
-  //8. Return created user
+  await sendVerificationCode(user);
   return user;
 }
 
-export async function loginUserService({ email, password, req }) {
-  const user = await userModel.findOne({email}).select("+password");
+export async function resendVerificationService(input) {
+  const email = normalizeEmail(input?.email);
+  const user = await userModel.findOne({ email });
 
-  if(!user) {
+  if (user && !user.verified) {
+    await sendVerificationCode(user);
+  }
+}
+
+export async function loginUserService(input) {
+  const { email, password } = validateLoginInput(input);
+  const user = await userModel.findOne({ email }).select("+password");
+  const passwordHash = user?.password ?? (await dummyPasswordHashPromise);
+  const passwordMatches = await bcrypt.compare(password, passwordHash);
+
+  if (!user || !passwordMatches || !user.verified) {
     throw new ApiError(401, "Invalid email or password");
   }
-  
-  if(!user.verified){
-    throw new ApiError(403, "Email not verified");
-  }
 
-  const isPasswordvalid = await user.comparePassword(password);
-
-  if(!isPasswordvalid) {
-    throw new ApiError(401, "Invalid Email or Password");
-  }
-
-  //Generate RefreshToken
-  const refreshToken = jwt.sign({
-    id: user._id
-  }, config.JWT_SECRET, {
-    expiresIn: '7d'
-  });
-
-   // Hash refresh token
+  const sessionId = new mongoose.Types.ObjectId();
+  const refreshToken = createRefreshToken(user._id, sessionId);
   const refreshTokenHash = crypto
     .createHash("sha256")
     .update(refreshToken)
     .digest("hex");
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000);
 
-  //Create session
   const session = await sessionModel.create({
+    _id: sessionId,
     user: user._id,
     refreshTokenHash,
-    ip: req.ip,
-    userAgent: req.headers['user-agent'] || 'unknown'
+    ip: input.req.ip,
+    userAgent: input.req.headers["user-agent"] || "unknown",
+    expiresAt,
   });
 
-  // Generate access token
-  const accessToken = jwt.sign(
-    {
-      id: user._id,
-      sessionId: session._id,
-    },
-    config.JWT_SECRET,
-    { expiresIn: "15m" }
-  );
-
+  const accessToken = createAccessToken(user._id, session._id);
 
   return {
-    user, 
+    user,
     session,
     refreshToken,
-    accessToken
-  }
-
+    accessToken,
+  };
 }

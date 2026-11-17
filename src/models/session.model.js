@@ -21,10 +21,16 @@ const sessionSchema = new mongoose.Schema({
     revoked: {
         type: Boolean,
         default: false
+    },
+    expiresAt: {
+        type: Date,
+        required: true
     }
 }, {
     timestamps: true
 })
+
+sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const sessionModel = mongoose.model("sessions", sessionSchema);
 

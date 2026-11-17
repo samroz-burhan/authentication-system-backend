@@ -2,10 +2,15 @@ import app from "./src/app.js";
 import connectDB from "./src/config/database.js";
 import config from "./src/config/config.js";
 
-const PORT = config.PORT_NO || 3000
+async function startServer() {
+  await connectDB();
 
-connectDB();
+  app.listen(config.PORT_NO, () => {
+    console.log(`Server is running on PORT: ${config.PORT_NO}`);
+  });
+}
 
-app.listen(PORT, () => {
-    console.log(`Server is running on PORT: ${PORT}`);
-})
+startServer().catch((error) => {
+  console.error("Server startup failed:", error.message);
+  process.exitCode = 1;
+});

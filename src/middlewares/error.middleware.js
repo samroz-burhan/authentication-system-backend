@@ -1,6 +1,10 @@
 import ApiError from "../utils/apiError.js";
 
 export default function errorMiddleware(err, req, res, next) {
+    if (res.headersSent) {
+        return next(err);
+    }
+
 
     // 1. Default values
     let statusCode = 500;
@@ -21,13 +25,23 @@ export default function errorMiddleware(err, req, res, next) {
     // 4. Mongoose validation error
     else if (err.name === "ValidationError") {
         statusCode = 400;
-        message = err.message;
+        message = "Invalid input";
     }
 
     // 5. Invalid MongoDB ObjectId
     else if (err.name === "CastError") {
         statusCode = 400;
         message = "Invalid resource ID";
+    }
+
+    else if (err.type === "entity.parse.failed") {
+        statusCode = 400;
+        message = "Request body must contain valid JSON";
+    }
+
+    else if (err.type === "entity.too.large") {
+        statusCode = 413;
+        message = "Request body is too large";
     }
 
     // 6. JWT errors

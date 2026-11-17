@@ -2,15 +2,17 @@ import express from 'express';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import errorMiddleware from "./middlewares/error.middleware.js";
+import originMiddleware from "./middlewares/origin.middleware.js";
 
 //All Routes
 import authRouter from "./routes/auth.routes.js";
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "16kb" }));
 app.use(morgan("dev"));
 app.use(cookieParser());
+app.use(originMiddleware);
 
 app.use("/api/auth", authRouter);
 
